@@ -12,7 +12,6 @@ function Get-Networkscan {
     
     process {
         if ($Network) {
-            #Get local connected networks }
             write-host "Scanning network $Network"
             get-netadapter | Remove-NetNeighbor -AddressFamily IPv4 -Confirm:$false -erroraction silentlycontinue
             $ScanResults = Invoke-PSnmap -ComputerName $network -Port 22, 445, 443, 3389, 9100 -ScanOnPingFail -DNS -NoSummary -PortConnectTimeoutMS 500
@@ -29,8 +28,8 @@ function Get-Networkscan {
         foreach ($Result in $ScanResults | Where-Object -Property ping -ne $false) {
             if ($Result.'ip/DNS') { $hostname = $Result.'IP/DNS' } else { $hostname = $Result.computername }
             $MACList = import-csv -path "$($MyInvocation.MyCommand.Module.ModuleBase)\private\macaddress.io-db.csv" -Delimiter ','
-            $OUI = ((Get-NetNeighbor $Result.computername -erroraction silentlycontinue).linklayeraddress -replace '-', ':').substring(0, 8)
-            $PossibleManafacture = $MACList | Where-Object -Property oui -eq $OUI
+            $OUI = ((Get-NetNeighbor $Result.computername -erroraction silentlycontinue).linklayeraddress -replace '-', ':')
+            if ($OUI) { $PossibleManafacture = $MACList | Where-Object -Property oui -eq ($OUI).substring(0, 8) }
             Write-Verbose $result.computername
             Write-Verbose "OUI Match: $PossibleManafacture"
             $DeviceType = switch ($result) {
